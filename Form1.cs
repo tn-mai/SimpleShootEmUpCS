@@ -393,7 +393,6 @@ namespace ShootingGameCS
       {
         bossList.RemoveAll(boss => boss.Hp <= 0);
         if (bossList.Count == 0)
-          score = 0;
         {
           gameState = gsClear;
         }
