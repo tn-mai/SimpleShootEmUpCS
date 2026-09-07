@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ShootingGameCS": {
+      "commandName": "Project",
+      "workingDirectory": "$(ProjectDir)"
+    }
+  }
+}
