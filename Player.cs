@@ -42,22 +42,22 @@ namespace ShootingGameCS
     {
       if (!IsDead)
       {
-      if (Form1.GetAsyncKeyState('A') < 0)
-      {
-        Sprite.X -= 600 * deltaTime;
-      }
-      if (Form1.GetAsyncKeyState('D') < 0)
-      {
-        Sprite.X += 600 * deltaTime;
-      }
-      if (Form1.GetAsyncKeyState('W') < 0)
-      {
-        Sprite.Y -= 600 * deltaTime;
-      }
-      if (Form1.GetAsyncKeyState('S') < 0)
-      {
-        Sprite.Y += 600 * deltaTime;
-      }
+        if (Form1.GetAsyncKeyState('A') < 0)
+        {
+          Sprite.X -= 600 * deltaTime;
+        }
+        if (Form1.GetAsyncKeyState('D') < 0)
+        {
+          Sprite.X += 600 * deltaTime;
+        }
+        if (Form1.GetAsyncKeyState('W') < 0)
+        {
+          Sprite.Y -= 600 * deltaTime;
+        }
+        if (Form1.GetAsyncKeyState('S') < 0)
+        {
+          Sprite.Y += 600 * deltaTime;
+        }
         if (Form1.GetAsyncKeyState(Form1.vkSpace) < 0)
         {
           ShotInterval -= deltaTime;
