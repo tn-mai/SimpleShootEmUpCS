@@ -83,95 +83,24 @@ namespace ShootingGameCS
       new int[,]{ { 128, 0, 0 }, { 448, 64, 0 }, { 128, 64, 0 }, { 288, 32, 50 }, { 0, 320, 50 }, { 32, 320, 50 }, { 288, 0, 5 }, { 288, 64, 2 }, { 320, 0, 5 }, { 320, 32, 1 }, { 320, 64, 1 }, },
     };
 
-    // 敵スポナークラス
-    private class EnemySpawner
-    {
-      public int Type;
-      public int X;
-      public int Count;
-      public float Timer;
-
-      private static readonly int[] enemyTypeList = { 0, 0, 6, 2, 5, 4, 7, 8, 2, 5, 9 };
-      private static readonly float[] intervalList = { 0.0f, 0.25f, 0.25f, 0.5f, 1.0f, 2.0f, 0.0f, 0.0f, 0.5f, 1.0f, 0.0f };
-      private static readonly float[][] offsetList = {
-        new float[] { },
-        new float[] { 0, -64, 64, -128, 128 },
-        new float[] { 0, 0, 0, 0, 0, 0, 0, 0 },
-        new float[] { 0, 256, -256, 128 },
-        new float[] { 0, -384, 256, -128 },
-        new float[] { 0, 384 },
-        new float[] { 0 },
-        new float[] { 0 },
-        new float[] { 0, -256, 192, -128 },
-        new float[] { 0, 192, -128, 256 },
-        new float[] { 0 },
-      };
-
-      public EnemySpawner(int type, int x)
-      {
-        Type = type;
-        X = x;
-        Count = 0;
-        Timer = intervalList[Type];
-      }
-
-      public void Update(float deltaTime, List<Enemy> enemies, List<Enemy> bossList, Character target)
-      {
-        if (Count >= offsetList[Type].Length)
-        {
-          return;
-        }
-
-        Timer += deltaTime;
-        if (Timer < intervalList[Type])
-        {
-          return;
-        }
-        float ox = offsetList[Type][Count];
-        if (X > nativeWidth * 0.5f)
-        {
-          ox *= -1.0f;
-        }
-        Enemy e = new(X + ox, -64,  enemyTypeList[Type], target);
-        enemies.Add(e);
-        if (Type == 9)
-        {
-          bossList.Add(e);
-        }
-        Count++;
-        Timer -= intervalList[Type];
-      }
-    }
-    private List<EnemySpawner> enemySpawnerList = new();
-
     // 敵出現データ
-    //   Y, [X,種類]x4
-    // 種類
-    //   0=なし
-    //   1=直進灰色雑魚x5
-    //   2=蛇行赤雑魚x8
-    //   3=上から追尾青雑魚x4
-    //   4=Uターン緑雑魚x4
-    //   5=3Way雑魚x2
-    //   6=直進中型雑魚x1
-    //   7=蛇行中型雑魚x1
-    //   8=横から追尾青雑魚x4
-    //   9=下からUターン緑雑魚x4
-    //  10=ボス１
+    //   Y, [種類, X]x4
     private static readonly int[,] enemyEntryList = new int[,] {
-      {  17,  5, 1, 0, 0, 0, 0, 0, 0 },
-      {  30, 15, 1, 0, 0, 0, 0, 0, 0 },
-      {  40,  5, 2, 0, 0, 0, 0, 0, 0 },
-      {  50, 10, 3, 0, 0, 0, 0, 0, 0 },
-      {  60, 10, 4, 0, 0, 0, 0, 0, 0 },
-      {  70, 13, 5, 0, 0, 0, 0, 0, 0 },
-      {  80,  5, 6, 0, 0, 0, 0, 0, 0 },
-      {  90, 15, 6, 0, 0, 0, 0, 0, 0 },
-      { 100,  5, 7, 0, 0, 0, 0, 0, 0 },
-      { 110, 15, 7, 0, 0, 0, 0, 0, 0 },
-      { 119, 10, 10, 0, 0, 0, 0, 0, 0 },
+      {  18, 1, 15, 0, 0, 0, 0, 0, 0 },
+      {  24, 1,  5, 0, 0, 0, 0, 0, 0 },
+      {  30, 2,  5, 0, 0, 0, 0, 0, 0 },
+      {  40, 2, 15, 0, 0, 0, 0, 0, 0 },
+      {  50, 3, 10, 0, 0, 0, 0, 0, 0 },
+      {  60, 4, 10, 0, 0, 0, 0, 0, 0 },
+      {  70, 5, 13, 0, 0, 0, 0, 0, 0 },
+      {  80, 6,  5, 0, 0, 0, 0, 0, 0 },
+      {  90, 6, 15, 0, 0, 0, 0, 0, 0 },
+      { 100, 7,  5, 0, 0, 0, 0, 0, 0 },
+      { 110, 7, 15, 0, 0, 0, 0, 0, 0 },
+      { 119,10, 10, 0, 0, 0, 0, 0, 0 },
     };
     private int enemyEntryIndex = 0;
+    private List<EnemySpawner> enemySpawnerList = new();
 
     // コンストラクタ
     public Form1()
@@ -361,10 +290,10 @@ namespace ShootingGameCS
       {
         for (int a = 0; a < 4; a += 1)
         {
-          int type = enemyEntryList[enemyEntryIndex, 2 + a * 2];
+          int type = enemyEntryList[enemyEntryIndex, 1 + a * 2];
           if (type > 0)
           {
-            int x = enemyEntryList[enemyEntryIndex, 1 + a * 2];
+            int x = enemyEntryList[enemyEntryIndex, 2 + a * 2];
             enemySpawnerList.Add(new(type, x * 64));
           }
         }
@@ -399,7 +328,7 @@ namespace ShootingGameCS
         enemies[a].Update(deltaTime, enemyBullets);
       }
       enemies.RemoveAll(enemy =>
-        enemy.c.Y >= nativeHeight + enemy.c.GetHeight() || enemy.c.Y < -(enemy.c.GetHeight() + 100));
+        enemy.c.Y >= nativeHeight + (enemy.c.GetHeight() + 64) || enemy.c.Y < -(enemy.c.GetHeight() + 64));
 
       // 敵弾の更新
       for (int a = 0; a < enemyBullets.Count; a++)
