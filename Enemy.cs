@@ -94,8 +94,16 @@ namespace ShootingGameCS
 
       case 5: // 緑雑魚+U字ターン(高速+下部)
         c = new Character(x, y, 1, hitboxSmall, rectGreen, 10);
-        InitMoveUTurn(600.0f, 0.0f);
-        cannonList.Add(new(0, 0, 1, 0.0f, 1, 1.25f)); // 1Way
+        if (MoveStartY < Form1.nativeHeight * 0.5f)
+        {
+          InitMoveUTurn(600.0f, 0.0f);
+          cannonList.Add(new(0, 0, 1, 0.0f, 1, 1.25f)); // 1Way
+        }
+        else
+        {
+          InitMoveUTurn(-500.0f, 0.75f);
+          cannonList.Add(new(0, 0, 1, 0.0f, 1, 2.0f)); // 1Way
+        }
         break;
 
       case 6: // 赤雑魚+蛇行(高速)
@@ -160,11 +168,14 @@ namespace ShootingGameCS
         c.Y += MoveSpeedY * deltaTime;
         if (Target != null)
         {
+          // プレイヤーに向かって加速
           float dx = Target.X - c.X;
           float dy = Target.Y - c.Y;
           float a = MathF.Sqrt(dx * dx + dy * dy);
           MoveSpeedX += 10.0f * (dx / a);
           MoveSpeedY += 10.0f * (dy / a);
+
+          // 最高速度を300に制限
           float b = 300.0f / MathF.Sqrt(MoveSpeedX * MoveSpeedX + MoveSpeedY * MoveSpeedY);
           MoveSpeedX *= b;
           MoveSpeedY *= b;
@@ -193,28 +204,20 @@ namespace ShootingGameCS
       // 蛇行
       case 6:
       case 8:
-        if (Type == 6)
-        {
-          c.X = MoveStartX + MathF.Sin(c.Y * 0.01f) * MoveSpeedX;
-        }
-        else
-        {
-          c.X = MoveStartX + MathF.Sin(c.Y * 0.01f) * MoveSpeedX;
-        }
+        c.X = MoveStartX + MathF.Sin(c.Y * 0.01f) * MoveSpeedX;
         c.Y += MoveSpeedY * deltaTime;
         break;
 
       // ボス１
       case 9:
         c.X = MoveStartX + MathF.Sin(Timer) * 400.0f;
-        c.Y += MoveSpeedY * deltaTime;
-        if (c.Y > 240)
+        if (c.Y < 240)
+        {
+          c.Y += MoveSpeedY * deltaTime;
+        }
+        else
         {
           c.Y = 240;
-          MoveSpeedY = 0;
-        }
-        if (MoveSpeedY == 0)
-        {
           Timer += 0.0025f;
         }
         break;
@@ -229,9 +232,9 @@ namespace ShootingGameCS
     // 直線移動のデータを初期化する
     private void InitMoveStraight(float speedX, float speedY)
     {
-      MoveSpeedX = (0.5f - c.X / Form1.nativeWidth) * (Form1.rand.Next(100) - 50) * speedX * 0.02f;
+      MoveSpeedX = (0.5f - MoveStartX / Form1.nativeWidth) * (Form1.rand.Next(100) - 50) * speedX * 0.02f;
       MoveSpeedY = speedY;
-      if (c.Y > Form1.nativeHeight / 2)
+      if (MoveStartY > Form1.nativeHeight / 2)
       {
         MoveSpeedY *= -1;
       }
@@ -241,21 +244,21 @@ namespace ShootingGameCS
     private void InitMoveHoming()
     {
       MoveSpeedX = 0;
-      if (c.X < 0)
+      if (MoveStartX < 0)
       {
         MoveSpeedX = 200;
       }
-      else if (c.X >= Form1.nativeWidth)
+      else if (MoveStartX >= Form1.nativeWidth)
       {
         MoveSpeedX = -200;
       }
 
       MoveSpeedY = 0;
-      if (c.Y < 0)
+      if (MoveStartY < 0)
       {
         MoveSpeedY = 200;
       }
-      else if (c.Y >= Form1.nativeHeight)
+      else if (MoveStartY >= Form1.nativeHeight)
       {
         MoveSpeedY = -200;
       }
@@ -266,10 +269,6 @@ namespace ShootingGameCS
     {
       MoveSpeedX = 0;
       MoveSpeedY = speed;
-      if (c.Y > Form1.nativeHeight / 2)
-      {
-        MoveSpeedY *= -1;
-      }
       Timer = timer;
     }
 
@@ -278,7 +277,7 @@ namespace ShootingGameCS
     {
       MoveSpeedX = speedX;
       MoveSpeedY = speedY;
-      if (c.X >= Form1.nativeWidth / 2)
+      if (MoveStartX >= Form1.nativeWidth / 2)
       {
         MoveSpeedX *= -1;
       }
