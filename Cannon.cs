@@ -40,6 +40,13 @@ namespace ShootingGameCS
         Timer += deltaTime;
         return;
       }
+      Timer -= Interval;
+
+      // 発射位置が画面外の場合は発射しない
+      if (shooter.X + X < 0 || shooter.X + X >= Form1.nativeWidth || shooter.Y + Y < 0 || shooter.Y + Y >= Form1.nativeHeight)
+      {
+        return;
+      }
 
       float direction = -MathF.PI * 0.5f;
       if (target != null)
@@ -59,7 +66,6 @@ namespace ShootingGameCS
         d += r;
       }
 
-      Timer -= Interval;
     }
   } // Cannonクラスブロックの終わり
 
