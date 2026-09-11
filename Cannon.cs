@@ -9,30 +9,31 @@ namespace ShootingGameCS
   // 弾丸発射パーツ
   internal class Cannon
   {
-    // 0=1Way
-    // 1=3Way
-    // 2=5Way
-    // 3=16Way
-    // 4=時計回り32Way
-    // 5=反時計回り32Way
     public float X;
     public float Y;
-    public int Type;
+    public int Count; // 発射数(Way数)
+    public float Range; // 発射範囲
     public float Interval; // 射撃開始間隔
     public float Timer;
-    public float FiredCount;
 
-    public Cannon(float x, float y, int type, float interval, float firstInterval)
+    private static Rectangle rect = new(336, 448, 16, 16);
+    private static Box hitbox = new(-8, 8, -8, 8);
+
+    public Cannon(float x, float y, int count, float range, float interval, float firstInterval)
     {
       X = x;
       Y = y;
-      Type = type;
+      Count = count;
+      if (Count < 1)
+      {
+        Count = 1;
+      }
+      Range = range * MathF.PI / 180.0f;
       Interval = interval;
       Timer = interval - firstInterval;
-      FiredCount = 0;
     }
 
-    public void Update(float deltaTime, Enemy enemy, List<NormalBullet> bulletList, Sprite? target)
+    public void Update(float deltaTime, Character shooter, List<NormalBullet> bulletList, Character? target)
     {
       if (Timer < Interval)
       {
@@ -40,65 +41,79 @@ namespace ShootingGameCS
         return;
       }
 
-      Rectangle rect = new(336, 448, 16, 16);
-      Box hitbox = new(-8, 8, -8, 8);
-
-      switch (Type)
+      float direction = -MathF.PI * 0.5f;
+      if (target != null)
       {
-      default:
-      case 0: // 1Way
-      case 1: // 3Way
-      case 2: // 5Way
-      case 3: // 16Way
-        float direction = -MathF.PI * 0.5f;
-        if (target != null)
-        {
-          float dx = target.X - enemy.Sprite.X - X;
-          float dy = target.Y - enemy.Sprite.Y - Y;
-          direction = MathF.Atan2(dy, dx);
-        }
-
-        int count = 1 + Type * 2;
-        if (Type == 3)
-        {
-          count = 16;
-        }
-        for (int a = 0; a < count; a++)
-        {
-          float d = direction + (a - count / 2) * (MathF.PI * 0.125f);
-          NormalBullet bullet = new(enemy.Sprite.X + X, enemy.Sprite.Y + Y,
-            rect, hitbox, 500 * MathF.Cos(d), 500 * MathF.Sin(d));
-          bulletList.Add(bullet);
-        }
-
-        Timer -= Interval;
-        break;
-
-      case 4: // 時計回り32Way
-      case 5: // 反時計回り32Way
-        {
-          float d = FiredCount * (MathF.PI * 0.0625f) - MathF.PI * 0.5f;
-          if (Type == 5)
-          {
-            d += MathF.PI;
-            d *= -1;
-          }
-          NormalBullet bullet = new(enemy.Sprite.X + X, enemy.Sprite.Y + Y,
-            rect, hitbox, 500 * MathF.Cos(d), -500 * MathF.Sin(d));
-          bulletList.Add(bullet);
-          if (FiredCount >= 32)
-          {
-            FiredCount = 0;
-            Timer -= Interval;
-          }
-          else
-          {
-            FiredCount++;
-            Timer -= deltaTime * 5;
-          }
-        }
-        break;
+        float dx = target.X - shooter.X - X;
+        float dy = target.Y - shooter.Y - Y;
+        direction = MathF.Atan2(dy, dx);
       }
+
+      float r = Range / (Count - 1);
+      float d = direction - Range * 0.5f;
+      for (int a = 0; a < Count; a++)
+      {
+        NormalBullet bullet = new(shooter.X + X, shooter.Y + Y,
+          500 * MathF.Cos(d), 500 * MathF.Sin(d), BulletType.EnemyNormal);
+        bulletList.Add(bullet);
+        d += r;
+      }
+
+      Timer -= Interval;
     }
   } // Cannonクラスブロックの終わり
+
+
+  // 弾丸発射パーツ
+  internal class RotationCannon
+  {
+    public float X;
+    public float Y;
+    public int Direction; // 0=時計回り32Way 1=反時計回り32Way
+    public float Interval; // 射撃開始間隔
+    public float Timer;
+    public float FiredCount;
+
+    private static Rectangle rect = new(336, 448, 16, 16);
+    private static Box hitbox = new(-8, 8, -8, 8);
+
+    public RotationCannon(float x, float y, int direction, float interval, float firstInterval)
+    {
+      X = x;
+      Y = y;
+      Direction = direction;
+      Interval = interval;
+      Timer = interval - firstInterval;
+      FiredCount = 0;
+    }
+
+    public void Update(float deltaTime, Character shooter, List<NormalBullet> bulletList, Character? target)
+    {
+      if (Timer < Interval)
+      {
+        Timer += deltaTime;
+        return;
+      }
+
+      float d = FiredCount * (MathF.PI * 0.0625f) - MathF.PI * 0.5f;
+      if (Direction == 1)
+      {
+        d += MathF.PI;
+        d *= -1;
+      }
+      NormalBullet bullet = new(shooter.X + X, shooter.Y + Y,
+        500 * MathF.Cos(d), -500 * MathF.Sin(d), BulletType.EnemyNormal);
+      bulletList.Add(bullet);
+      if (FiredCount >= 32)
+      {
+        FiredCount = 0;
+        Timer -= Interval;
+      }
+      else
+      {
+        FiredCount++;
+        Timer -= deltaTime * 5;
+      }
+    }
+  } // RotationCannonクラスブロックの終わり
 }

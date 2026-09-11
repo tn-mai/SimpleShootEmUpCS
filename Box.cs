@@ -13,6 +13,8 @@ namespace ShootingGameCS
     public float Top;
     public float Bottom;
 
+    public static readonly Box Empty = new(0, 0, 0, 0);
+
     public Box(float left, float right, float top, float bottom)
     {
       Set(left, right, top, bottom);

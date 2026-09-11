@@ -1,3 +1,5 @@
+//#define RANDOM_SPAWN
+
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
@@ -46,14 +48,14 @@ namespace ShootingGameCS
 
     // 敵の変数
     private List<Enemy> enemies = new();
-    private List<NormalBullet> enemyBullets= new();
+    private List<NormalBullet> enemyBullets = new();
     private float enemySpawnTimer = 0;
     private List<Enemy> bossList = new();
 
-    private List<AnimatedSprite> animatedSpriteList = new();
+    private List<Character> effectList = new();
 
     // 背景の変数
-    private Sprite[,] backgroundTiles = new Sprite[15 * 8, 20];
+    private int[,] backgroundTiles = new int[15 * 8, 20];
     private float backgroundY = 15 * 7 * 64;
 
     // フォントの変数
@@ -65,6 +67,111 @@ namespace ShootingGameCS
     private Bitmap bmpCharacter = new("assets/images/objects.png");
     private Bitmap bmpBackground = new("assets/images/bg0.png");
     private Bitmap bmpBackground2 = new("assets/images/bg_space_long.png");
+
+    // エフェクトアニメーション
+    private static Rectangle[] rectBlast = {
+      new(320, 368, 32, 32), new(352, 368, 32, 32), new(384, 368, 32, 32),
+      new(416, 368, 32, 32), new(448, 368, 32, 32), new(480, 368, 32, 32) };
+
+    private static Rectangle[] rectHitEffect = {
+      new(304, 352, 16, 16), new(320, 352, 16, 16), new(336, 352, 16, 16), new(352, 352, 16, 16),
+    };
+
+    // 背景データ
+    private static readonly int[][,] tileList = new int[maxStageNo][,] {
+      new int[,]{ { 0, 224, 30 }, { 32, 224, 20 }, { 64, 224, 20 }, { 96, 224, 20 }, { 128, 224, 10 }, { 160, 224, 2 }, { 192, 224, 3 } , { 224, 224, 1 } },
+      new int[,]{ { 128, 0, 0 }, { 448, 64, 0 }, { 128, 64, 0 }, { 288, 32, 50 }, { 0, 320, 50 }, { 32, 320, 50 }, { 288, 0, 5 }, { 288, 64, 2 }, { 320, 0, 5 }, { 320, 32, 1 }, { 320, 64, 1 }, },
+    };
+
+    // 敵スポナークラス
+    private class EnemySpawner
+    {
+      public int Type;
+      public int X;
+      public int Count;
+      public float Timer;
+
+      private static readonly int[] enemyTypeList = { 0, 0, 6, 2, 5, 4, 7, 8, 2, 5, 9 };
+      private static readonly float[] intervalList = { 0.0f, 0.25f, 0.25f, 0.5f, 1.0f, 2.0f, 0.0f, 0.0f, 0.5f, 1.0f, 0.0f };
+      private static readonly float[][] offsetList = {
+        new float[] { },
+        new float[] { 0, -64, 64, -128, 128 },
+        new float[] { 0, 0, 0, 0, 0, 0, 0, 0 },
+        new float[] { 0, 256, -256, 128 },
+        new float[] { 0, -384, 256, -128 },
+        new float[] { 0, 384 },
+        new float[] { 0 },
+        new float[] { 0 },
+        new float[] { 0, -256, 192, -128 },
+        new float[] { 0, 192, -128, 256 },
+        new float[] { 0 },
+      };
+
+      public EnemySpawner(int type, int x)
+      {
+        Type = type;
+        X = x;
+        Count = 0;
+        Timer = intervalList[Type];
+      }
+
+      public void Update(float deltaTime, List<Enemy> enemies, List<Enemy> bossList, Character target)
+      {
+        if (Count >= offsetList[Type].Length)
+        {
+          return;
+        }
+
+        Timer += deltaTime;
+        if (Timer < intervalList[Type])
+        {
+          return;
+        }
+        float ox = offsetList[Type][Count];
+        if (X > nativeWidth * 0.5f)
+        {
+          ox *= -1.0f;
+        }
+        Enemy e = new(X + ox, -64,  enemyTypeList[Type], target);
+        enemies.Add(e);
+        if (Type == 9)
+        {
+          bossList.Add(e);
+        }
+        Count++;
+        Timer -= intervalList[Type];
+      }
+    }
+    private List<EnemySpawner> enemySpawnerList = new();
+
+    // 敵出現データ
+    //   Y, [X,種類]x4
+    // 種類
+    //   0=なし
+    //   1=直進灰色雑魚x5
+    //   2=蛇行赤雑魚x8
+    //   3=上から追尾青雑魚x4
+    //   4=Uターン緑雑魚x4
+    //   5=3Way雑魚x2
+    //   6=直進中型雑魚x1
+    //   7=蛇行中型雑魚x1
+    //   8=横から追尾青雑魚x4
+    //   9=下からUターン緑雑魚x4
+    //  10=ボス１
+    private static readonly int[,] enemyEntryList = new int[,] {
+      {  17,  5, 1, 0, 0, 0, 0, 0, 0 },
+      {  30, 15, 1, 0, 0, 0, 0, 0, 0 },
+      {  40,  5, 2, 0, 0, 0, 0, 0, 0 },
+      {  50, 10, 3, 0, 0, 0, 0, 0, 0 },
+      {  60, 10, 4, 0, 0, 0, 0, 0, 0 },
+      {  70, 13, 5, 0, 0, 0, 0, 0, 0 },
+      {  80,  5, 6, 0, 0, 0, 0, 0, 0 },
+      {  90, 15, 6, 0, 0, 0, 0, 0, 0 },
+      { 100,  5, 7, 0, 0, 0, 0, 0, 0 },
+      { 110, 15, 7, 0, 0, 0, 0, 0, 0 },
+      { 119, 10, 10, 0, 0, 0, 0, 0, 0 },
+    };
+    private int enemyEntryIndex = 0;
 
     // コンストラクタ
     public Form1()
@@ -97,14 +204,10 @@ namespace ShootingGameCS
       enemies.Clear();
       enemyBullets.Clear();
       bossList.Clear();
-      animatedSpriteList.Clear();
+      effectList.Clear();
       backgroundY = 15 * 7 * 64;
 
       // 背景データを作成
-      int[][,] tileList = new int[maxStageNo][,];
-      tileList[0] = new int[,]{ { 0, 224, 30 }, { 32, 224, 20 }, { 64, 224, 20 }, { 96, 224, 20 }, { 128, 224, 10 }, { 160, 224, 2 }, { 192, 224, 3 } , { 224, 224, 1 } };
-      tileList[1] = new int[,]{ { 288, 32, 50 }, { 0, 320, 50 }, { 32, 320, 50 }, { 288, 0, 5 }, { 288, 64, 2 }, { 320, 0, 5 }, { 320, 32, 1 }, { 320, 64, 1 } };
-
       int tileCount = tileList[stageNo].GetLength(0);
       int totalTiles = 0;
       for (int a = 0; a < tileCount; a++)
@@ -127,26 +230,21 @@ namespace ShootingGameCS
             }
             p -= tileList[stageNo][a, 2];
           }
-          int px = tileList[stageNo][id, 0];
-          int py = tileList[stageNo][id, 1];
-          backgroundTiles[y, x] = new Sprite(x * 32, y * 32, new(px, py, 32, 32));
+          backgroundTiles[y, x] = id;
         }
       }
       if (stageNo == 1)
       {
-        Rectangle rectU = new(128, 0, 32, 32);
-        Rectangle rectC = new(448, 64, 32, 32);
-        Rectangle rectD = new(128, 64, 32, 32);
-        int[] indices = { 0, 1, 2, 3, 4, 5, 6 };
-        Random.Shared.Shuffle(indices);
+        int[] roadOffsetIndices = { 0, 1, 2, 3, 4, 5, 6 };
+        Random.Shared.Shuffle(roadOffsetIndices);
         for (int a = 0; a < 4; a++)
         {
-          int y = indices[a] * 15 + r.Next(10);
+          int y = roadOffsetIndices[a] * 15 + r.Next(10);
           for (int x = 0; x < 20; x++)
           {
-            backgroundTiles[y, x] = new Sprite(x * 32, y * 3 * 32, rectU);
-            backgroundTiles[y + 1, x] = new Sprite(x * 32, y * 3 * 32 + 32, rectC);
-            backgroundTiles[y + 2, x] = new Sprite(x * 32, y * 3 * 32 + 64, rectD);
+            backgroundTiles[y, x] = 0;
+            backgroundTiles[y + 1, x] = 1;
+            backgroundTiles[y + 2, x] = 2;
           }
         }
       }
@@ -257,7 +355,29 @@ namespace ShootingGameCS
       // プレイヤーの操作
       player.Update(deltaTime);
 
+#if !RANDOM_SPAWN
+      // 敵スポナーの発生
+      if (enemyEntryIndex < enemyEntryList.GetLength(0) && 960 * 8 - enemyEntryList[enemyEntryIndex, 0] * 64 >= backgroundY)
+      {
+        for (int a = 0; a < 4; a += 1)
+        {
+          int type = enemyEntryList[enemyEntryIndex, 2 + a * 2];
+          if (type > 0)
+          {
+            int x = enemyEntryList[enemyEntryIndex, 1 + a * 2];
+            enemySpawnerList.Add(new(type, x * 64));
+          }
+        }
+        enemyEntryIndex++;
+      }
+
       // 敵の出現
+      for (int a = 0; a < enemySpawnerList.Count; a += 1)
+      {
+        enemySpawnerList[a].Update(deltaTime, enemies, bossList, player.c);
+      }
+      enemySpawnerList.RemoveAll(spawner => spawner.Count <= 0);
+#else
       if (backgroundY > 720)
       {
         enemySpawnTimer += deltaTime;
@@ -267,18 +387,21 @@ namespace ShootingGameCS
           if (enemies.Count < 10)
           {
             int type = rand.Next(9);
-            enemies.Add(new Enemy(rand.Next(18) * 64 + 64, -64, type, player.Sprite));
+            enemies.Add(new Enemy(rand.Next(18) * 64 + 64, -64, type, player.c));
           }
         }
       }
+#endif
 
+      // 敵の更新
       for (int a = 0; a < enemies.Count; a++)
       {
         enemies[a].Update(deltaTime, enemyBullets);
       }
-      enemies.RemoveAll((Enemy e) => {
-        return e.Sprite.Y >= nativeHeight + e.Sprite.Rect.Height || e.Sprite.Y < -(e.Sprite.Rect.Height + 100); });
+      enemies.RemoveAll(enemy =>
+        enemy.c.Y >= nativeHeight + enemy.c.GetHeight() || enemy.c.Y < -(enemy.c.GetHeight() + 100));
 
+      // 敵弾の更新
       for (int a = 0; a < enemyBullets.Count; a++)
       {
         enemyBullets[a].Update(deltaTime);
@@ -291,32 +414,34 @@ namespace ShootingGameCS
         backgroundY -= 1;
       }
 
+#if RANDOM_SPAWN
       if (backgroundY == 1)
       {
-        Enemy boss = new(nativeWidth / 2, -192, 9, player.Sprite);
+        Enemy boss = new(nativeWidth / 2, -192, 9, player.c);
         enemies.Add(boss);
         bossList.Add(boss);
       }
+#endif
 
       // プレイヤーの弾と敵の衝突判定
       for (int a = 0; a < player.Bullets.Count; a++)
       {
         NormalBullet bullet = player.Bullets[a];
-        Box boxA = Box.Add(bullet.Hitbox, bullet.Sprite.X, bullet.Sprite.Y);
+        Box boxA = Box.Add(bullet.c.Hitbox, bullet.c.X, bullet.c.Y);
         for (int b = 0; b < enemies.Count; b++)
         {
           Enemy e = enemies[b];
-          Box boxB = Box.Add(e.Hitbox, e.Sprite.X, e.Sprite.Y);
+          Box boxB = Box.Add(e.c.Hitbox, e.c.X, e.c.Y);
           if (boxA.IsCollide(boxB))
           {
-            e.Hp--;
-            if (e.Hp <= 0)
+            e.c.Hp--;
+            if (e.c.Hp <= 0)
             {
               // 爆発を表示
-              animatedSpriteList.Add(new(e.Sprite.X, e.Sprite.Y, 6, 15, new(320, 368, 32, 32)));
+              effectList.Add(new(e.c.X, e.c.Y, 1, Box.Empty, rectBlast, 15));
 
               // 得点を増やす
-              if (e.Type < Enemy.ScoreList.Length)
+              if (e.Type >= 0 && e.Type < Enemy.ScoreList.Length)
               {
                 score += Enemy.ScoreList[e.Type];
               }
@@ -326,11 +451,13 @@ namespace ShootingGameCS
             }
             else
             {
-              AnimatedSprite s = new(
-                bullet.Sprite.X, bullet.Sprite.Y - bullet.Sprite.Rect.Height / 2,
-                4, 30, new(304, 352, 16, 16));
-              s.Sprite.Priority = 1;
-              animatedSpriteList.Add(s);
+              // ヒットエフェクトを表示
+              Character s = new(bullet.c.X, bullet.c.Y - bullet.c.GetHeight() / 2,
+                1, Box.Empty, rectHitEffect, 30);
+              s.Priority = 1;
+              effectList.Add(s);
+
+              // 得点を増やす
               score += 10;
             }
             player.Bullets.RemoveAt(a);
@@ -340,6 +467,8 @@ namespace ShootingGameCS
         }
       }
 
+      // 死んでいなければ、プレイヤーの衝突判定を実行
+      // 死んでいたら、一定時間後にゲームオーバー状態にする
       if (player.IsDead)
       {
         deadTimer -= deltaTime;
@@ -351,14 +480,14 @@ namespace ShootingGameCS
       else
       {
         // 敵の弾とプレイヤーの衝突判定
-        Box boxPlayer = Box.Add(player.Hitbox, player.Sprite.X, player.Sprite.Y);
+        Box boxPlayer = Box.Add(player.c.Hitbox, player.c.X, player.c.Y);
         for (int a = 0; a < enemyBullets.Count; a++)
         {
           NormalBullet b = enemyBullets[a];
-          Box boxBullet = Box.Add(b.Hitbox, b.Sprite.X, b.Sprite.Y);
+          Box boxBullet = Box.Add(b.c.Hitbox, b.c.X, b.c.Y);
           if (boxBullet.IsCollide(boxPlayer))
           {
-            animatedSpriteList.Add(new(player.Sprite.X, player.Sprite.Y, 6, 15, new(320, 368, 32, 32)));
+            effectList.Add(new(player.c.X, player.c.Y, 1, Box.Empty, rectBlast, 6));
             player.IsDead = true;
             deadTimer = 2;
             break;
@@ -369,29 +498,29 @@ namespace ShootingGameCS
         for (int a = 0; a < enemies.Count; a++)
         {
           Enemy e = enemies[a];
-          Box boxEnemy = Box.Add(e.Hitbox, e.Sprite.X, e.Sprite.Y);
+          Box boxEnemy = Box.Add(e.c.Hitbox, e.c.X, e.c.Y);
           if (boxEnemy.IsCollide(boxPlayer))
           {
-            animatedSpriteList.Add(new(player.Sprite.X, player.Sprite.Y, 6, 15, new(320, 368, 32, 32)));
+            effectList.Add(new(player.c.X, player.c.Y, 1, Box.Empty, rectBlast, 6));
             player.IsDead = true;
             deadTimer = 2;
             break;
           }
         }
-      }
+      } // プレイヤーの衝突判定の終わり
 
       // 爆発・ヒットエフェクトの更新
-      animatedSpriteList.Sort((a, b) => (int)(a.Sprite.Priority - b.Sprite.Priority));
-      for (int a = 0; a < animatedSpriteList.Count; a++)
+      effectList.Sort((a, b) => (int)(a.Priority - b.Priority));
+      for (int a = 0; a < effectList.Count; a++)
       {
-        animatedSpriteList[a].Update(deltaTime);
+        effectList[a].Update(deltaTime);
       }
-      animatedSpriteList.RemoveAll((AnimatedSprite e) => { return e.AnimeTimer >= e.Count; });
+      effectList.RemoveAll(character => character.AnimeIsEnd);
 
       // ステージクリア判定
       if (!player.IsDead && bossList.Count > 0)
       {
-        bossList.RemoveAll(boss => boss.Hp <= 0);
+        bossList.RemoveAll(boss => boss.c.Hp <= 0);
         if (bossList.Count == 0)
         {
           gameState = gsClear;
@@ -413,7 +542,7 @@ namespace ShootingGameCS
 
       g.Clear(Color.DarkKhaki);
 
-#if false
+#if true
       g.CompositingMode = CompositingMode.SourceCopy;
       int minY = (int)(backgroundY / 64);
       if (minY < 0)
@@ -427,15 +556,19 @@ namespace ShootingGameCS
         maxY = backgroundTiles.GetLength(0);
       }
 
-      int tileY = minY * 64 - (int)backgroundY;
+      Rectangle srcTile = new(0, 0, 32, 32);
+      Rectangle dstTile = new(0, minY * 64 - (int)backgroundY, 64, 64);
       for (int y = minY; y < maxY; y++)
       {
         for (int x = 0; x < 20; x++)
         {
-          Rectangle d = new(x * 64, tileY, 64, 64);
-          g.DrawImage(bmpBackground, d, backgroundTiles[y, x].Rect, GraphicsUnit.Pixel);
+          int id = backgroundTiles[y, x];
+          srcTile.X = tileList[stageNo][id, 0];
+          srcTile.Y = tileList[stageNo][id, 1];
+          dstTile.X = x * 64;
+          g.DrawImage(bmpBackground, dstTile, srcTile, GraphicsUnit.Pixel);
         }
-        tileY += 64;
+        dstTile.Y += 64;
       }
       g.CompositingMode = CompositingMode.SourceOver;
 #else
@@ -448,27 +581,27 @@ namespace ShootingGameCS
 
       for (int a = 0; a < enemies.Count; a++)
       {
-        enemies[a].Sprite.Draw(g, bmpCharacter);
+        enemies[a].c.Draw(g, bmpCharacter);
       }
 
       for (int a = 0; a < player.Bullets.Count; a++)
       {
-        player.Bullets[a].Sprite.Draw(g, bmpCharacter);
+        player.Bullets[a].c.Draw(g, bmpCharacter);
       }
 
       for (int a = 0; a < enemyBullets.Count; a++)
       {
-        enemyBullets[a].Sprite.Draw(g, bmpCharacter);
+        enemyBullets[a].c.Draw(g, bmpCharacter);
       }
 
-      for (int a = 0; a < animatedSpriteList.Count; a++)
+      for (int a = 0; a < effectList.Count; a++)
       {
-        animatedSpriteList[a].Sprite.Draw(g, bmpCharacter);
+        effectList[a].Draw(g, bmpCharacter);
       }
 
       if (!player.IsDead)
       {
-        player.Sprite.Draw(g, bmpCharacter);
+        player.c.Draw(g, bmpCharacter);
       }
 
       // 得点を表示
