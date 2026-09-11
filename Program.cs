@@ -5,9 +5,9 @@ namespace ShootingGameCS
 {
   internal static class Program
   {
-    // OSの「画面書き換えのタイミングを待つ機能」を使えるようにする
-    [DllImport("dwmapi.dll")]
-    public static extern int DwmFlush();
+    //OSの「スリープ時間の精度を変える機能」を使えるようにする
+    [DllImport("winmm.dll")]
+    static extern uint timeBeginPeriod(uint uMilliseconds);
 
     /// <summary>
     ///  The main entry point for the application.
@@ -15,6 +15,8 @@ namespace ShootingGameCS
     [STAThread]
     static void Main()
     {
+      timeBeginPeriod(1); //スリープの精度を１ミリ秒に設定
+
       // To customize application configuration such as set high DPI settings or default font,
       // see https://aka.ms/applicationconfiguration.
       ApplicationConfiguration.Initialize();
@@ -29,25 +31,25 @@ namespace ShootingGameCS
       double prevTotalSeconds = 0;
       for (; !form.IsDisposed;)
       {
-        double t = sw.Elapsed.TotalSeconds;
-        double dt = t - prevTotalSeconds;
-        //if (dt < 1.0 / 120.0)
-        //{
-        //  Thread.Sleep(8);
-        //  t = sw.Elapsed.TotalSeconds;
-        //  dt = t - prevTotalSeconds;
-        //}
-        //if (dt < 1.0 / 60.0)
-        //{
-        //  continue;
-        //}
-        form.Text = dt.ToString();
-        form.Update((float)dt);
-        prevTotalSeconds = t;
+        int wait = (int)((1.0 / 60.0 - (sw.Elapsed.TotalSeconds - prevTotalSeconds)) * 1000);
+        if (wait > 0)
+        {
+          Thread.Sleep(wait);
+        }
+        form.Text = (sw.Elapsed.TotalSeconds - prevTotalSeconds).ToString();
+        if (sw.Elapsed.TotalSeconds - prevTotalSeconds < 5.0 / 60.0)
+        {
+          prevTotalSeconds += 1.0 / 60.0;
+        }
+        else
+        {
+          prevTotalSeconds = sw.Elapsed.TotalSeconds;
+        }
+
+        form.Update(1.0f / 60.0f);
 
         form.Invalidate();
         Application.DoEvents();
-        DwmFlush();
       }
       sw.Stop();
     }
