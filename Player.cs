@@ -10,15 +10,19 @@ namespace ShootingGameCS
   internal class Player
   {
     public Character c;
+    public Character engine;
     public List<NormalBullet> Bullets;
     public float ShotInterval;
     public bool IsDead;
 
     private static Rectangle[] rect = { new(0, 512 - 48, 32, 48) };
+    private static Rectangle[] rectEngine = { new(32, 512 - 8, 16, 8), new(32, 512 - 16, 16, 8), new(32, 512 - 24, 16, 8) };
 
     public Player()
     {
       c = new(Form1.nativeWidth / 2, Form1.nativeHeight / 2, 1, new(-16, 16, -16, 16), rect, 15);
+      engine = new(c.X, c.Y + 40, 1, Box.Empty, rectEngine, 15);
+      engine.AnimeIsLoop = true;
       Bullets = new();
       ShotInterval = 0;
       IsDead = false;
@@ -29,6 +33,11 @@ namespace ShootingGameCS
       c.X = Form1.nativeWidth / 2;
       c.Y = Form1.nativeHeight * 2 / 3;
       c.ResetAnimeTimer();
+
+      engine.X = c.X;
+      engine.Y = c.Y + 40;
+      engine.ResetAnimeTimer();
+
       Bullets.Clear();
       ShotInterval = 0;
       IsDead = false;
@@ -37,6 +46,7 @@ namespace ShootingGameCS
     public void Update(float deltaTime)
     {
       c.Update(deltaTime);
+      engine.Update(deltaTime);
 
       if (!IsDead)
       {
@@ -88,6 +98,9 @@ namespace ShootingGameCS
       {
         c.Y = Form1.nativeHeight - 32;
       }
+
+      engine.X = c.X;
+      engine.Y = c.Y + 40;
 
       // プレイヤーの弾の移動
       for (int a = 0; a < Bullets.Count; a++)

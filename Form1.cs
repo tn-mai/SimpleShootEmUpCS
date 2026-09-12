@@ -531,6 +531,7 @@ namespace ShootingGameCS
       if (!player.IsDead)
       {
         player.c.Draw(g, bmpCharacter);
+        player.engine.Draw(g, bmpCharacter);
       }
 
       // 得点を表示
