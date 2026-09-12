@@ -11,15 +11,23 @@ namespace ShootingGameCS
   {
     public Character c;
 
-    // 0=回転雑魚+直線(低速)
-    // 1=回転雑魚+直線(高速)
+    // 直進(方向, 速度)、ランダムあり
+    // 自機狙い直進(速度)、ランダムあり
+    // 加減速(方向, 速度, 加速度、加速開始時間)
+    // 横蛇行(速度、振幅、周波数、蛇行開始時間)
+    // 縦蛇行(速度、振幅、周波数、蛇行開始時間)
+    // 直進+停止(方向、速度、直進時間、停止時間)
+
+    // 0=回転雑魚+直進(低速)
+    // 1=回転雑魚+直進(高速)
     // 2=青雑魚+追尾(低速)
-    // 3=隕石
+    // 3=隕石+直進
     // 4=3WAY雑魚+U字ターン(低速+上部)
     // 5=緑雑魚+U字ターン(高速+下部)
     // 6=赤雑魚+蛇行(高速)
-    // 7=中型雑魚+直線(低速)
+    // 7=中型雑魚+直進(低速)
     // 8=中型雑魚+蛇行(低速)
+    // 9=ボス１
     public int Type;
     public List<Cannon> cannonList = new();
     //public List<RotationCannon> rotationCannonList = new();
@@ -36,11 +44,11 @@ namespace ShootingGameCS
     public static readonly Rectangle[] rectGray= new Rectangle[] { new(0, 112, 32, 32), new(32, 112, 32, 32), new(64, 112, 32, 32), new(96, 112, 32, 32) };
     public static readonly Rectangle[] rectRed = new Rectangle[] { new(0, 144, 32, 32), new(32, 144, 32, 32), new(64, 144, 32, 32) };
     public static readonly Rectangle[] rectGreen = new Rectangle[] { new(0, 176, 32, 32), new(32, 176, 32, 32), new(64, 176, 32, 32) };
-    public static readonly Rectangle[] rectBlue = new Rectangle[] { new(96, 176, 32, 32), new(128, 176, 32, 32), new(160, 176, 32, 32) };
+    public static readonly Rectangle[] rectBlue = new Rectangle[] { new(0, 208, 32, 32), new(32, 208, 32, 32), new(64, 208, 32, 32) };
     public static readonly Rectangle[] rect3Way = new Rectangle[] { new(0, 64, 32, 48) };
-    public static readonly Rectangle[] rectMedium = new Rectangle[] { new(0, 0, 64, 64), new(64, 0, 64, 64) };
-    public static readonly Rectangle[] rectAsteroid = new Rectangle[] { new(0, 208, 64, 64) };
-    public static readonly Rectangle[] rectBoss1 = new Rectangle[] { new(256, 0, 256, 128) };
+    public static readonly Rectangle[] rectMedium = new Rectangle[] { new(128, 0, 64, 64), new(192, 0, 64, 64) };
+    public static readonly Rectangle[] rectAsteroid = new Rectangle[] { new(0, 240, 64, 64) };
+    public static readonly Rectangle[] rectBoss1 = new Rectangle[] { new(768, 0, 256, 128) };
 
     public static readonly Box hitboxSmall = new(-24, 24, -24, 24);
     public static readonly Box hitbox3Way = new(-24, 32, -32, 32);

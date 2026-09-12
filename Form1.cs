@@ -5,6 +5,13 @@ using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 //using SFML.Audio;
 
+/*
+  1. プロジェクトを新規作成し、ゲームループを作る
+  2. 背景を表示する
+  3. 背景をスクロールさせる
+  5. Characterクラスを作る
+  4. 自機を表示する
+*/
 namespace ShootingGameCS
 {
   public partial class Form1 : Form
@@ -70,11 +77,11 @@ namespace ShootingGameCS
 
     // エフェクトアニメーション
     private static Rectangle[] rectBlast = {
-      new(320, 368, 32, 32), new(352, 368, 32, 32), new(384, 368, 32, 32),
-      new(416, 368, 32, 32), new(448, 368, 32, 32), new(480, 368, 32, 32) };
+      new(848, 384, 16, 16), new(864, 368, 32, 32), new(896, 368, 32, 32),
+      new(928, 368, 32, 32), new(960, 368, 32, 32), new(992, 368, 32, 32) };
 
     private static Rectangle[] rectHitEffect = {
-      new(304, 352, 16, 16), new(320, 352, 16, 16), new(336, 352, 16, 16), new(352, 352, 16, 16),
+      new(32, 464, 16, 16), new(48, 464, 16, 16), new(64, 464, 16, 16), new(80, 464, 16, 16),
     };
 
     // 背景データ

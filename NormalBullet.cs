@@ -21,8 +21,8 @@ namespace ShootingGameCS
     public float MoveSpeedY;
 
     private static readonly Rectangle[][] rectList = {
-      new Rectangle[]{ new(32, 424, 16, 32) },
-      new Rectangle[]{ new(336, 448, 16, 16) },
+      new Rectangle[]{ new(48, 432, 16, 32) },
+      new Rectangle[]{ new(320, 464, 16, 16) },
     };
 
     private static readonly Box[] hitboxList = {
