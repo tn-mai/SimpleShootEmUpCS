@@ -86,7 +86,7 @@ namespace ShootingGameCS
       }
       Enemy e = new(x, y, enemyTypeList[Type], target);
       enemies.Add(e);
-      if (Type == 9)
+      if (enemyTypeList[Type] == 9)
       {
         bossList.Add(e);
       }
