@@ -9,8 +9,35 @@ using System.Runtime.InteropServices;
   1. プロジェクトを新規作成し、ゲームループを作る
   2. 背景を表示する
   3. 背景をスクロールさせる
+  4. 敵を表示する
   5. Characterクラスを作る
-  4. 自機を表示する
+  6. 敵をアニメーションさせる
+
+  7. Enemyクラスを作る
+  8. 直線的な動きを作る
+  9. EnemySpawnerクラスを作る
+ 10. 敵を複数出現させる
+ 11. 敵出現テーブルを作る
+ 12. 蛇行する動きを作る
+
+ 13. Playerクラスを作る
+ 14. 自機を動かす
+ 15. Normalbulletクラスを作る
+ 16. 自機から弾を出す
+ 17. パワーアップアイテムを出す
+ 18. 自機をパワーアップさせる
+
+ 19. Boxクラスを作る
+ 20. 敵を破壊する
+ 21. 得点を表示する
+ 22. Cannonクラスを作る
+ 23. 敵からまっすぐ弾を出す
+ 24. 敵から自機を狙う弾を出す
+
+ 25. 自機を破壊する(ゲームオーバー)
+ 26. ボスを出す
+ 27. ボスの動きを作る
+ 28. ボスを破壊する(ステージクリア)
 */
 namespace ShootingGameCS
 {
@@ -52,12 +79,15 @@ namespace ShootingGameCS
 
     // プレイヤーの変数
     private Player player = new();
+    private List<Character> itemList = new();
 
     // 敵の変数
     private List<Enemy> enemies = new();
-    private List<NormalBullet> enemyBullets = new();
-    private float enemySpawnTimer = 0;
     private List<Enemy> bossList = new();
+    private List<NormalBullet> enemyBullets = new();
+#if RANDOM_SPAWN
+    private float enemySpawnTimer = 0;
+#endif
 
     private List<Character> effectList = new();
 
@@ -91,23 +121,45 @@ namespace ShootingGameCS
     };
 
     // 敵出現データ
+    public class SpawnerData
+    {
+      public int Type;
+      public float X;
+
+      public SpawnerData(int type, float x)
+      {
+        Type = type;
+        X = x;
+      }
+    }
+    public class SpawnerList
+    {
+      public int Line; // スポーンさせる背景Y座標
+      public SpawnerData[] Data; // スポ―ナ―の配列
+
+      public SpawnerList(int line, int t0, float x0, int t1, float x1, int t2, float x2, int t3, float x3)
+      {
+        Line = line * 64;
+        Data = new SpawnerData[] { new(t0, x0), new(t1, x1), new(t2, x2), new(t3, x3) };
+      }
+    }
     //   Y, [種類, X]x4
-    private static readonly int[,] enemyEntryList = new int[,] {
-      {  18, 1, 15, 0, 0, 0, 0, 0, 0 },
-      {  24, 1,  5, 0, 0, 0, 0, 0, 0 },
-      {  30, 2,  5, 0, 0, 0, 0, 0, 0 },
-      {  40, 2, 15, 0, 0, 0, 0, 0, 0 },
-      {  50, 3, 10, 0, 0, 0, 0, 0, 0 },
-      {  60, 4, 10, 0, 0, 0, 0, 0, 0 },
-      {  70, 5, 13, 0, 0, 0, 0, 0, 0 },
-      {  80, 6,  5, 0, 0, 0, 0, 0, 0 },
-      {  90, 6, 15, 0, 0, 0, 0, 0, 0 },
-      { 100, 7,  5, 0, 0, 0, 0, 0, 0 },
-      { 110, 7, 15, 0, 0, 0, 0, 0, 0 },
-      { 119,10, 10, 0, 0, 0, 0, 0, 0 },
+    private static readonly SpawnerList[] spawnerDataList = new SpawnerList[] {
+      new( 18, 1, 15, 0, 0, 0, 0, 0, 0),
+      new( 24, 1,  5, 0, 0, 0, 0, 0, 0),
+      new( 30, 2,  5, 0, 0, 0, 0, 0, 0),
+      new( 40, 2, 15, 0, 0, 0, 0, 0, 0),
+      new( 50, 3, 10, 0, 0, 0, 0, 0, 0),
+      new( 60, 4, 10, 0, 0, 0, 0, 0, 0),
+      new( 70, 5, 13, 0, 0, 0, 0, 0, 0),
+      new( 80, 6,  5, 0, 0, 0, 0, 0, 0),
+      new( 90, 6, 15, 0, 0, 0, 0, 0, 0),
+      new(100, 7,  5, 0, 0, 0, 0, 0, 0),
+      new(110, 7, 15, 0, 0, 0, 0, 0, 0),
+      new(119,10, 10, 0, 0, 0, 0, 0, 0),
     };
-    private int enemyEntryIndex = 0;
     private List<EnemySpawner> enemySpawnerList = new();
+    private int spawnListIndex = 0;
 
     // コンストラクタ
     public Form1()
@@ -137,10 +189,16 @@ namespace ShootingGameCS
     private void InitStage()
     {
       player.Init();
+      itemList.Clear();
       enemies.Clear();
-      enemyBullets.Clear();
       bossList.Clear();
+      enemyBullets.Clear();
+
+      enemySpawnerList.Clear();
+      spawnListIndex = 0;
+
       effectList.Clear();
+
       backgroundY = 15 * 7 * 64;
 
       // 背景データを作成
@@ -293,18 +351,18 @@ namespace ShootingGameCS
 
 #if !RANDOM_SPAWN
       // 敵スポナーの発生
-      if (enemyEntryIndex < enemyEntryList.GetLength(0) && 960 * 8 - enemyEntryList[enemyEntryIndex, 0] * 64 >= backgroundY)
+      if (spawnListIndex < spawnerDataList.Length && 960 * 8 - spawnerDataList[spawnListIndex].Line >= backgroundY)
       {
         for (int a = 0; a < 4; a += 1)
         {
-          int type = enemyEntryList[enemyEntryIndex, 1 + a * 2];
+          int type = spawnerDataList[spawnListIndex].Data[a].Type;
           if (type > 0)
           {
-            int x = enemyEntryList[enemyEntryIndex, 2 + a * 2];
+            float x = spawnerDataList[spawnListIndex].Data[a].X;
             enemySpawnerList.Add(new(type, x * 64));
           }
         }
-        enemyEntryIndex++;
+        spawnListIndex++;
       }
 
       // 敵の出現
@@ -359,6 +417,21 @@ namespace ShootingGameCS
       }
 #endif
 
+      // アイテムの出現
+      if ((int)backgroundY % 1200 == 100)
+      {
+        Rectangle[] rectItem = { new(320, 480, 32, 32) };
+        Box hitboxItem = new(-32, 32, -32, 32);
+        itemList.Add(new((rand.Next(11) + 2) * 64, -32, 1, hitboxItem, rectItem, 10));
+      }
+
+      // アイテムの移動と消去
+      for (int a = 0; a < itemList.Count; a += 1)
+      {
+        itemList[a].Y += 150 * deltaTime;
+      }
+      itemList.RemoveAll(item => item.Y >= nativeHeight + 32);
+
       // プレイヤーの弾と敵の衝突判定
       for (int a = 0; a < player.Bullets.Count; a++)
       {
@@ -370,7 +443,7 @@ namespace ShootingGameCS
           Box boxB = Box.Add(e.c.Hitbox, e.c.X, e.c.Y);
           if (boxA.IsCollide(boxB))
           {
-            e.c.Hp--;
+            e.c.Hp -= 1;
             if (e.c.Hp <= 0)
             {
               // 爆発を表示
@@ -441,6 +514,21 @@ namespace ShootingGameCS
             player.IsDead = true;
             deadTimer = 2;
             break;
+          }
+        }
+
+        // アイテムとプレイヤーの衝突判定
+        for (int a = 0; a < itemList.Count; a += 1)
+        {
+          Box boxItem = Box.Add(itemList[a].Hitbox, itemList[a].X, itemList[a].Y);
+          if (boxItem.IsCollide(boxPlayer))
+          {
+            itemList[a].Y = nativeHeight + 100;
+            player.ShotLevel += 1;
+            if (player.ShotLevel > 5)
+            {
+              player.ShotLevel = 5;
+            }
           }
         }
       } // プレイヤーの衝突判定の終わり
@@ -518,6 +606,11 @@ namespace ShootingGameCS
       for (int a = 0; a < enemies.Count; a++)
       {
         enemies[a].c.Draw(g, bmpCharacter);
+      }
+
+      for (int a = 0; a < itemList.Count; a++)
+      {
+        itemList[a].Draw(g, bmpCharacter);
       }
 
       for (int a = 0; a < player.Bullets.Count; a++)
