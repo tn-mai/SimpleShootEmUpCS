@@ -13,6 +13,7 @@ namespace ShootingGameCS
     public Character engine;
     public List<NormalBullet> Bullets;
     public float ShotInterval;
+    public int ShotLevel;
     public bool IsDead;
 
     private static Rectangle[] rect = { new(0, 512 - 48, 32, 48) };
@@ -25,6 +26,7 @@ namespace ShootingGameCS
       engine.AnimeIsLoop = true;
       Bullets = new();
       ShotInterval = 0;
+      ShotLevel = 1;
       IsDead = false;
     }
 
@@ -40,6 +42,7 @@ namespace ShootingGameCS
 
       Bullets.Clear();
       ShotInterval = 0;
+      ShotLevel = 1;
       IsDead = false;
     }
 
@@ -71,8 +74,23 @@ namespace ShootingGameCS
           ShotInterval -= deltaTime;
           if (ShotInterval <= 0)
           {
-            Bullets.Add(new NormalBullet(c.X, c.Y - 16, 0, -1200, BulletType.PlayerNormal));
-            ShotInterval += 0.1f;
+            if (ShotLevel % 2 == 1)
+            {
+              Bullets.Add(new NormalBullet(c.X, c.Y - 16, 0, -1200, BulletType.PlayerNormal));
+            }
+            else
+            {
+              Bullets.Add(new NormalBullet(c.X - 16, c.Y - 12, 0, -1200, BulletType.PlayerNormal));
+              Bullets.Add(new NormalBullet(c.X + 16, c.Y - 12, 0, -1200, BulletType.PlayerNormal));
+            }
+            for (int a = 1; a < ((ShotLevel + 1) / 2); a += 1)
+            {
+              float mx = MathF.Cos((90 - a * 15) * MathF.PI / 180.0f) * 1200;
+              float my = MathF.Sin((90 - a * 15) * MathF.PI / 180.0f) * -1200;
+              Bullets.Add(new NormalBullet(c.X - a * 8, c.Y - 16, mx, my, BulletType.PlayerNormal));
+              Bullets.Add(new NormalBullet(c.X + a * 8, c.Y - 16, -mx, my, BulletType.PlayerNormal));
+            }
+            ShotInterval += 0.15f;
           }
         }
         else
