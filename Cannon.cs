@@ -16,9 +16,6 @@ namespace ShootingGameCS
     public float Interval; // 射撃開始間隔
     public float Timer;
 
-    private static Rectangle rect = new(320, 464, 16, 16);
-    private static Box hitbox = new(-8, 8, -8, 8);
-
     public Cannon(float x, float y, int count, float range, float interval, float firstInterval)
     {
       X = x;
@@ -79,9 +76,6 @@ namespace ShootingGameCS
     public float Interval; // 射撃開始間隔
     public float Timer;
     public float FiredCount;
-
-    private static Rectangle rect = new(336, 448, 16, 16);
-    private static Box hitbox = new(-8, 8, -8, 8);
 
     public RotationCannon(float x, float y, int direction, float interval, float firstInterval)
     {
